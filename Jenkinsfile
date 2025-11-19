@@ -21,18 +21,13 @@ pipeline {
         stage('Build Dockerfile') {
             steps {
                 sh 'docker build . -t rawensahraoui/country-service:$BUILD_NUMBER'
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-pwd', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PWD')]) {
-                    sh 'echo $DOCKER_PWD | docker login -u $DOCKER_USER --password-stdin'
-                }
-                sh 'docker tag rawensahraoui/country-service:$BUILD_NUMBER rawensahraoui/country-service:$BUILD_NUMBER'
-                sh 'docker push rawensahraoui/country-service:$BUILD_NUMBER'
             }
         }
         
         stage('Deploy micro-service') {
             steps {
-                sh 'docker rm -f $(docker ps -aq)'
-                sh 'docker run -d -p 8082:8082 rawensahraoui/country-service:$BUILD_NUMBER'
+                sh 'docker rm -f country-service-container || true'
+                sh 'docker run -d --name country-service-container -p 8082:8082 rawensahraoui/country-service:$BUILD_NUMBER'
             }
         }
     }
