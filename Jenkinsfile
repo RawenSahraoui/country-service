@@ -21,7 +21,7 @@ pipeline {
         stage('Build Dockerfile') {
             steps {
                 sh 'docker build . -t rawensahraoui/country-service:$BUILD_NUMBER'
-                withCredentials([string(credentialsId: 'dockerhub-pwd', variable: 'dockerhubpwd')]) {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-pwd', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PWD')]) {
                     sh 'docker login -u rawensahraoui -p ${dockerhubpwd}'
                 }
                 sh 'docker tag rawensahraoui/country-service:$BUILD_NUMBER rawensahraoui/country-service:$BUILD_NUMBER'
