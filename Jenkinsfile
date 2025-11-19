@@ -8,7 +8,7 @@ pipeline {
     stages {
         stage('Checkout code') {
             steps {
-                git branch: 'main', url: 'https://github.com/RawenSahraoui/country-service.git'
+                git branch: 'main', url: 'https://github.com/RawenSahraoui/Country-service.git'
             }
         }
         
@@ -22,7 +22,7 @@ pipeline {
             steps {
                 sh 'docker build . -t rawensahraoui/country-service:$BUILD_NUMBER'
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-pwd', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PWD')]) {
-                    sh 'docker login -u rawensahraoui -p ${dockerhubpwd}'
+                    sh 'echo $DOCKER_PWD | docker login -u $DOCKER_USER --password-stdin'
                 }
                 sh 'docker tag rawensahraoui/country-service:$BUILD_NUMBER rawensahraoui/country-service:$BUILD_NUMBER'
                 sh 'docker push rawensahraoui/country-service:$BUILD_NUMBER'
