@@ -2,49 +2,38 @@ pipeline {
     agent any
     
     tools {
-        maven 'M2_HOME'  // ← Corrigé ici
-        jdk 'JDK21'
+        maven 'M2_HOME'
     }
     
     stages {
         stage('Checkout code') {
             steps {
-                git branch: 'main', 
-                    url: 'https://github.com/RawenSahraoui/country-service.git'
+                git branch: 'master', url: 'https://github.com/RawenSahraoui/country-service.git'
             }
         }
         
-        stage('Compile code') {
+        stage('Build maven') {
             steps {
-                sh 'mvn clean compile'
+                sh 'mvn clean install'
             }
         }
         
-        stage('Test code') {
+        stage('Build Dockerfile') {
             steps {
-                sh 'mvn test'
-            }
-            post {
-                success {
-                    junit allowEmptyResults: true, 
-                          testResults: '**/target/surefire-reports/*.xml'
+                sh 'docker build . -t rawensahraoui/country-service:$BUILD_NUMBER'
+                withCredentials([string(credentialsId: 'dockerhub-pwd', variable: 'dockerhubpwd')]) {
+                    sh 'docker login -u rawensahraoui -p ${dockerhubpwd}'
                 }
+                sh 'docker tag rawensahraoui/country-service:$BUILD_NUMBER rawensahraoui/country-service:$BUILD_NUMBER'
+                sh 'docker push rawensahraoui/country-service:$BUILD_NUMBER'
             }
         }
         
-        stage('Package') {
+        stage('Deploy micro-service') {
             steps {
-                sh 'mvn clean package -DskipTests'
+                sh 'docker rm -f $(docker ps -aq)'
+                sh 'docker run -d -p 8082:8082 rawensahraoui/country-service:$BUILD_NUMBER'
             }
-        }
-    }
-    
-    post {
-        success {
-            echo '✅ Pipeline executed successfully!'
-        }
-        failure {
-            echo '❌ Pipeline failed!'
         }
     }
 }
