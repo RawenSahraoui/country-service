@@ -2,59 +2,49 @@ pipeline {
     agent any
     
     tools {
-        maven 'mvn'
+        maven 'M2_HOME'  // ← Corrigé ici
+        jdk 'JDK21'
     }
     
     stages {
         stage('Checkout code') {
             steps {
-                git branch: 'main', url: 'https://github.com/zainebboulabiar-blip/country-service.git'
+                git branch: 'main', 
+                    url: 'https://github.com/RawenSahraoui/country-service.git'
             }
         }
         
-        stage('Compile, test code, package in war file and store in maven repo') {
+        stage('Compile code') {
             steps {
-                sh 'mvn clean install'
+                sh 'mvn clean compile'
+            }
+        }
+        
+        stage('Test code') {
+            steps {
+                sh 'mvn test'
             }
             post {
                 success {
-                    junit allowEmptyResults: true,
-                        testResults: '**/target/surefire-reports/*.xml'
+                    junit allowEmptyResults: true, 
+                          testResults: '**/target/surefire-reports/*.xml'
                 }
-            }
-        }
-
-        stage('Build Dockerfile') {
-            steps {
-                sh 'docker build . -t my-country-service:$BUILD_NUMBER'
-                withCredentials([string(credentialsId: 'dockerhub-pwd', variable: 'dockerhubpwd')]) {
-                    sh 'docker login -u raedbourouis -p ${dockerhubpwd}'
-                }
-                sh 'docker tag my-country-service:$BUILD_NUMBER zainebboulabiar-blip/my-country-service:$BUILD_NUMBER'
-                sh 'docker push zainebboulabiar/my-country-service:$BUILD_NUMBER'
             }
         }
         
-        stage('Deploy to Kubernetes') {
+        stage('Package') {
             steps {
-                script {
-                    kubeconfig(credentialsId: 'kubeconfig-file', serverUrl: '') {
-                        sh 'kubectl apply -f deployment.yaml'
-                        sh 'kubectl apply -f service.yaml'
-                    }
-                }
+                sh 'mvn clean package -DskipTests'
             }
         }
-
-       
     }
     
     post {
         success {
-            echo 'Pipeline executed successfully!'
+            echo '✅ Pipeline executed successfully!'
         }
         failure {
-            echo 'Pipeline failed! Check console output for details.'
+            echo '❌ Pipeline failed!'
         }
     }
 }
